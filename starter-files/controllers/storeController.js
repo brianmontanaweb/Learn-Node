@@ -56,7 +56,7 @@ exports.getStores = async (req, res) => {
 };
 
 const confirmOwner = (store, user) => {
-  if(!store.author.equals(user._id)) {
+  if (!store.author.equals(user._id)) {
     throw Error('You must be the author of the store to edit.');
   }
 };
@@ -89,9 +89,22 @@ exports.getStoreBySlug = async (req, res, next) => {
 
 exports.getStoresByTag = async (req, res) => {
   const tag = req.params.tag;
-  const tagQuery = tag || { $exists: true };
+  const tagQuery = tag || {$exists: true};
   const tagsPromise = await Store.getTagsList();
-  const storesPromise = Store.find({ tags: tagQuery });
+  const storesPromise = Store.find({tags: tagQuery});
   const [tags, stores] = await Promise.all([tagsPromise, storesPromise]);
-  res.render('tag', { tags, title: 'Tags', tag, stores});
+  res.render('tag', {tags, title: 'Tags', tag, stores});
+};
+
+exports.searchStores = async (req, res) => {
+  const stores = await Store.find({
+    $text: {
+      $search: req.query.q
+    }
+  }, {
+    score: {$meta: 'textScore'}
+  }).sort({
+    score: {$meta: 'textScore'}
+  }).limit(10);
+  res.json(stores);
 };
